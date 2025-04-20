@@ -50,6 +50,13 @@ st.write(f"こんにちは、{name}さん！")
 # age = st.slider("年齢", 0, 100, 25)
 # st.write(f"あなたの年齢: {age}")
 
+st.subheader("BMI計測")
+height = st.slider("身長", 0, 300, 170)
+weight = st.slider("体重", 0, 200, 70)
+BMI = (weight / (height / 100) **2)
+st.write(f'あなたのBMI: {BMI:.3f}')
+
+
 # セレクトボックス
 # st.subheader("セレクトボックス")
 # option = st.selectbox(
@@ -168,7 +175,7 @@ st.write(f"こんにちは、{name}さん！")
 # st.header("スタイルのカスタマイズ")
 
 # カスタムCSS
-# st.markdown("""
+#st.markdown("""
 # <style>
 # .big-font {
 #     font-size:20px ！important;
@@ -177,7 +184,7 @@ st.write(f"こんにちは、{name}さん！")
 # }
 # </style>
 # """, unsafe_allow_html=True)
-# 
+
 # st.markdown('<p class="big-font">これはカスタムCSSでスタイリングされたテキストです！</p>', unsafe_allow_html=True)
 
 # ============================================
