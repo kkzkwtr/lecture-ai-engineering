@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import time
+import time, random
 
 # ============================================
 # ページ設定
@@ -15,7 +15,7 @@ import time
 # ============================================
 # タイトルと説明
 # ============================================
-st.title("Streamlit 初心者向けデモ")
+st.title("🤖Streamlit Gemma model UI")
 st.markdown("### コメントを解除しながらStreamlitの機能を学びましょう")
 st.markdown("このデモコードでは、コメントアウトされた部分を順番に解除しながらUIの変化を確認できます。")
 
@@ -64,6 +64,37 @@ st.write(f'あなたのBMI: {BMI:.3f}')
 #     ["Python", "JavaScript", "Java", "C++", "Go", "Rust"]
 # )
 # st.write(f"あなたは{option}を選びました")
+
+st.subheader("じゃんけん")
+
+# ユーザーの選択
+option = st.selectbox(
+  "最初はグー!ジャンケンポン",
+  ["グー✊", "チョキ✌", "パー🖐"]
+)
+
+# 相手（コンピューター）の選択
+choices = ["グー✊", "チョキ✌", "パー🖐"]
+computer_choice = random.choice(choices)
+
+# 勝敗判定
+def judge(player, computer):
+    if player == computer:
+        return "あいこです！"
+    elif (player == "グー✊" and computer == "チョキ✌") or \
+         (player == "チョキ✌" and computer == "パー🖐") or \
+         (player == "パー🖐" and computer == "グー✊"):
+        return "あなたの勝ちです！🎉"
+    else:
+        return "あなたの負けです...💦"
+
+# ボタンを押したら結果を表示
+if st.button("勝負！"):
+    st.write(f"あなたの手: {option}")
+    st.write(f"相手の手: {computer_choice}")
+    result = judge(option, computer_choice)
+    st.subheader(result)
+
 
 # ============================================
 # レイアウト
