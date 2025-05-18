@@ -1,5 +1,7 @@
 mlruns
-
+演習3/models/baseline_metrics.json
+演習3/models/baseline_model.pkl
+演習3/models/baseline_model.pkl
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

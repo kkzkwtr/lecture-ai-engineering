@@ -12,10 +12,46 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 
+import json
+from datetime import datetime, timezone
+
+
 # テスト用データとモデルパスを定義
 DATA_PATH = os.path.join(os.path.dirname(__file__), "../data/Titanic.csv")
 MODEL_DIR = os.path.join(os.path.dirname(__file__), "../models")
 MODEL_PATH = os.path.join(MODEL_DIR, "titanic_model.pkl")
+
+#ベースラインモデルとモデルのパスを定義
+BASELINE_MODEL_PATH = os.path.join(MODEL_DIR, "baseline_model.pkl")
+BASELINE_METRICS_PATH = os.path.join(MODEL_DIR, "baseline_metrics.json")
+
+#許容する精度低下率
+MAX_DEGRADATION = 0.01
+
+def save_baseline(model, accuracy):
+    """
+    ベースラインモデルとメトリクスを保存する
+    """
+    os.makedirs(MODEL_DIR, exist_ok=True)
+
+    #ベースラインモデルが存在しない場合は保存
+    if not os.path.exists(BASELINE_MODEL_PATH):
+        with open(BASELINE_MODEL_PATH, "wb") as f:
+            pickle.dump(model, f)
+    
+    #メトリクスJSONが存在しない場合は保存
+    if not os.path.exists(BASELINE_METRICS_PATH):
+        entries = []
+    else:
+        with open(BASELINE_METRICS_PATH, "r") as f:
+            entries = json.load(f)
+    
+    entry = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "accuracy": accuracy}
+    entries.append(entry)
+    with open(BASELINE_METRICS_PATH, "w") as f:
+        json.dump(entries, f, indent=2)
 
 
 @pytest.fixture
@@ -99,6 +135,11 @@ def train_model(sample_data, preprocessor):
     with open(MODEL_PATH, "wb") as f:
         pickle.dump(model, f)
 
+    #テストセットでの精度を算出してベースラインJSONに追記
+    y_pred = model.predict(X_test)
+    acc = accuracy_score(y_test, y_pred)
+    save_baseline(model, acc)
+
     return model, X_test, y_test
 
 
@@ -171,3 +212,20 @@ def test_model_reproducibility(sample_data, preprocessor):
     assert np.array_equal(
         predictions1, predictions2
     ), "モデルの予測結果に再現性がありません"
+
+def test_model_regression():
+    """直前2回分の精度を比較し、劣化が許容値内か検証"""
+    if not os.path.exists(BASELINE_METRICS_PATH):
+        pytest.skip("メトリクスファイルが存在しないためスキップします")
+    with open(BASELINE_METRICS_PATH, "r") as f:
+        entries = json.load(f)
+    if len(entries) < 2:
+        pytest.skip("メトリクスが2件未満のためスキップします")
+
+    prev_acc = entries[-2]["accuracy"]
+    latest_acc = entries[-1]["accuracy"]
+    degradation = prev_acc - latest_acc
+    assert degradation <= MAX_DEGRADATION, (
+        f"モデル精度が前回({prev_acc:.3f})から劣化しています: 最新={latest_acc:.3f}, 劣化率={degradation:.3f}"  
+    )
+
