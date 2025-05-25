@@ -55,9 +55,12 @@ def save_baseline(model: Pipeline, accuracy: float) -> None:
             with open(BASELINE_METRICS_PATH, "r") as f:
                 entries = json.load(f)
 
-        entry = {"timestamp": datetime.now(timezone.utc).isoformat(), "accuracy": accuracy}
+        entry = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "accuracy": accuracy,
+        }
         entries.append(entry)
-        
+
         with open(BASELINE_METRICS_PATH, "w") as f:
             json.dump(entries, f, indent=2)
     except (IOError, json.JSONDecodeError) as e:
@@ -85,7 +88,16 @@ def sample_data() -> pd.DataFrame:
 
             # 必要なカラムのみ選択
             df = df[
-                ["Pclass", "Sex", "Age", "SibSp", "Parch", "Fare", "Embarked", "Survived"]
+                [
+                    "Pclass",
+                    "Sex",
+                    "Age",
+                    "SibSp",
+                    "Parch",
+                    "Fare",
+                    "Embarked",
+                    "Survived",
+                ]
             ]
 
             os.makedirs(os.path.dirname(DATA_PATH), exist_ok=True)
@@ -136,7 +148,9 @@ def preprocessor() -> ColumnTransformer:
 
 
 @pytest.fixture
-def train_model(sample_data: pd.DataFrame, preprocessor: ColumnTransformer) -> Tuple[Pipeline, pd.DataFrame, pd.Series]:
+def train_model(
+    sample_data: pd.DataFrame, preprocessor: ColumnTransformer
+) -> Tuple[Pipeline, pd.DataFrame, pd.Series]:
     """
     モデルの学習とテストデータの準備
 
@@ -162,7 +176,10 @@ def train_model(sample_data: pd.DataFrame, preprocessor: ColumnTransformer) -> T
         model = Pipeline(
             steps=[
                 ("preprocessor", preprocessor),
-                ("classifier", RandomForestClassifier(n_estimators=100, random_state=42)),
+                (
+                    "classifier",
+                    RandomForestClassifier(n_estimators=100, random_state=42),
+                ),
             ]
         )
 
@@ -208,7 +225,9 @@ def test_model_accuracy(train_model: Tuple[Pipeline, pd.DataFrame, pd.Series]) -
     assert accuracy >= 0.75, f"モデルの精度が低すぎます: {accuracy}"
 
 
-def test_model_inference_time(train_model: Tuple[Pipeline, pd.DataFrame, pd.Series]) -> None:
+def test_model_inference_time(
+    train_model: Tuple[Pipeline, pd.DataFrame, pd.Series],
+) -> None:
     """
     モデルの推論時間を検証
 
@@ -228,7 +247,9 @@ def test_model_inference_time(train_model: Tuple[Pipeline, pd.DataFrame, pd.Seri
     assert inference_time < 1.0, f"推論時間が長すぎます: {inference_time}秒"
 
 
-def test_model_reproducibility(sample_data: pd.DataFrame, preprocessor: ColumnTransformer) -> None:
+def test_model_reproducibility(
+    sample_data: pd.DataFrame, preprocessor: ColumnTransformer
+) -> None:
     """
     モデルの再現性を検証
 
@@ -275,23 +296,24 @@ def test_model_regression() -> None:
     """直前2回分の精度を比較し、劣化が許容値内か検証"""
     if not os.path.exists(BASELINE_METRICS_PATH):
         pytest.skip("メトリクスファイルが存在しないためスキップします")
-    
+
     try:
         with open(BASELINE_METRICS_PATH, "r") as f:
             entries = json.load(f)
-        
+
         if len(entries) < 2:
             pytest.skip("メトリクスが2件未満のためスキップします")
 
         prev_acc = entries[-2]["accuracy"]
         latest_acc = entries[-1]["accuracy"]
-        
+
         # 精度の変化を計算（劣化も向上も考慮）
         accuracy_change = latest_acc - prev_acc
-        
+
         # 精度が劣化した場合のみ警告
         if accuracy_change < 0:
-            assert abs(accuracy_change) <= MAX_DEGRADATION, \
-                f"モデル精度が前回({prev_acc:.3f})から劣化しています: 最新={latest_acc:.3f}, 劣化率={abs(accuracy_change):.3f}"
+            assert (
+                abs(accuracy_change) <= MAX_DEGRADATION
+            ), f"モデル精度が前回({prev_acc:.3f})から劣化しています: 最新={latest_acc:.3f}, 劣化率={abs(accuracy_change):.3f}"
     except (IOError, json.JSONDecodeError) as e:
         pytest.fail(f"メトリクスの読み込みに失敗しました: {str(e)}")
